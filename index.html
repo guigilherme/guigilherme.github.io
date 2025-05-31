@@ -197,8 +197,27 @@
     </div>
 
     <script>
-        // Array to store appointment data
+        // Array para armazenar os dados dos agendamentos
         let appointments = [];
+        const STORAGE_KEY = 'psi_appointments'; // Chave para localStorage
+
+        // Função para carregar agendamentos do localStorage
+        function loadAppointments() {
+            const storedAppointments = localStorage.getItem(STORAGE_KEY);
+            if (storedAppointments) {
+                try {
+                    appointments = JSON.parse(storedAppointments);
+                } catch (e) {
+                    console.error("Erro ao carregar agendamentos do localStorage:", e);
+                    appointments = []; // Resetar se houver erro de parsing
+                }
+            }
+        }
+
+        // Função para salvar agendamentos no localStorage
+        function saveAppointments() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(appointments));
+        }
 
         // DOM Elements
         const appointmentForm = document.getElementById('appointmentForm');
@@ -286,6 +305,7 @@
                     if (originalIndex > -1) {
                         appointments.splice(originalIndex, 1);
                         showMessage('Agendamento removido com sucesso!', 'success');
+                        saveAppointments(); // Salva após remover
                         renderAppointments(); // Re-render the list
                     }
                 });
@@ -300,6 +320,7 @@
                     if (appointmentIndex > -1) {
                         appointments[appointmentIndex].isPaid = isChecked;
                         showMessage('Status de pagamento atualizado!', 'success');
+                        saveAppointments(); // Salva após atualizar
                         renderAppointments(); // Re-render to update status text/color
                     }
                 });
@@ -336,6 +357,7 @@
 
             appointments.push(newAppointment);
             showMessage('Agendamento adicionado com sucesso!');
+            saveAppointments(); // Salva após adicionar
 
             // Clear form fields
             patientNameInput.value = '';
@@ -350,6 +372,7 @@
         // Initial button text change on load
         document.addEventListener('DOMContentLoaded', () => {
             submitButton.textContent = 'Adicionar Agendamento'; // Set initial button text
+            loadAppointments(); // Carrega os agendamentos ao iniciar
             renderAppointments(); // Initial render
         });
 
@@ -369,6 +392,7 @@
                 return dayOrder[a.day] - dayOrder[b.day];
             });
             showMessage('Lista organizada por dia da semana.');
+            saveAppointments(); // Salva após ordenar
             renderAppointments();
         }
 
@@ -377,6 +401,7 @@
                 return a.time.localeCompare(b.time);
             });
             showMessage('Lista organizada por horário.');
+            saveAppointments(); // Salva após ordenar
             renderAppointments();
         }
 
