@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agenda Clínica Psicológica</title>
+    <link rel="manifest" href="manifest.json">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            color: #4a6fa5;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .calendar-nav {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        button {
+            background-color: #4a6fa5;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: #3a5a80;
+        }
+        
+        .current-month {
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+        
+        .calendar {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .calendar th {
+            background-color: #4a6fa5;
+            color: white;
+            padding: 10px;
+            text-align: center;
+        }
+        
+        .calendar td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            height: 100px;
+            vertical-align: top;
+            position: relative;
+        }
+        
+        .calendar td:hover {
+            background-color: #f0f0f0;
+        }
+        
+        .day-number {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .appointment {
+            background-color: #e3f2fd;
+            border-left: 3px solid #4a6fa5;
+            padding: 5px;
+            margin: 2px 0;
+            border-radius: 3px;
+            font-size: 0.8em;
+            cursor: pointer;
+        }
+        
+        .appointment:hover {
+            background-color: #bbdefb;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+        }
+        
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 500px;
+            border-radius: 8px;
+        }
+        
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .close:hover {
+            color: black;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        input, select, textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        
+        .today {
+            background-color: #e3f2fd;
+        }
+        
+        .other-month {
+            color: #aaa;
+            background-color: #f9f9f9;
+        }
+        
+        .search-container {
+            margin-bottom: 20px;
+        }
+        
+        .appointment-time {
+            font-weight: bold;
+            color: #4a6fa5;
+        }
+        
+        .price-tag {
+            background-color: #4CAF50;
+            color: white;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-size: 0.7em;
+            float: right;
+        }
+        
+        .summary-panel {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .summary-panel h3 {
+            margin-top: 0;
+            color: #4a6fa5;
+        }
+        
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+
+        /* Estilos para o modal de mensagem personalizado */
+        .message-modal {
+            display: none;
+            position: fixed;
+            z-index: 100; /* Acima de outros modais */
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .message-modal-content {
+            background-color: #fefefe;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 400px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .message-modal-content h3 {
+            margin-top: 0;
+            color: #4a6fa5;
+        }
+
+        .message-modal-buttons {
+            margin-top: 20px;
+        }
+
+        .message-modal-buttons button {
+            margin: 0 10px;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .message-modal-buttons .confirm-btn {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .message-modal-buttons .cancel-btn {
+            background-color: #f44336;
+            color: white;
+        }
+        
+        @media (max-width: 768px) {
+            .calendar th, .calendar td {
+                padding: 5px;
+                font-size: 0.8em;
+            }
+            
+            .day-number {
+                font-size: 0.9em;
+            }
+            
+            .appointment {
+                font-size: 0.7em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Agenda Clínica Psicológica</h1>
+        
+        <div class="summary-panel">
+            <h3>Resumo Financeiro do Mês</h3>
+            <div class="summary-item">
+                <span>Total de Sessões:</span>
+                <span id="totalSessions">0</span>
+            </div>
+            <div class="summary-item">
+                <span>Valor Total:</span>
+                <span id="totalValue">R$ 0,00</span>
+            </div>
+            <div class="summary-item">
+                <span>Média por Sessão:</span>
+                <span id="averageValue">R$ 0,00</span>
+            </div>
+        </div>
+        
+        <div class="search-container">
+            <input type="text" id="searchInput" placeholder="Buscar paciente..." style="padding: 8px; width: 300px; max-width: 100%;">
+            <button onclick="searchAppointments()">Buscar</button>
+        </div>
+        
+        <div class="header">
+            <div class="calendar-nav">
+                <button onclick="previousMonth()">‹</button>
+                <h2 class="current-month" id="currentMonth">Maio 2023</h2>
+                <button onclick="nextMonth()">›</button>
+                <button onclick="goToToday()">Hoje</button>
+            </div>
+            <button onclick="openAddModal()">+ Novo Agendamento</button>
+        </div>
+        
+        <table class="calendar" id="calendar">
+            <thead>
+                <tr>
+                    <th>Domingo</th>
+                    <th>Segunda</th>
+                    <th>Terça</th>
+                    <th>Quarta</th>
+                    <th>Quinta</th>
+                    <th>Sexta</th>
+                    <th>Sábado</th>
+                </tr>
+            </thead>
+            <tbody id="calendar-body">
+                </tbody>
+        </table>
+    </div>
+    
+    <div id="appointmentModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2 id="modalTitle">Novo Agendamento</h2>
+            <form id="appointmentForm">
+                <input type="hidden" id="appointmentId">
+                <input type="hidden" id="appointmentDate">
+                
+                <div class="form-group">
+                    <label for="patientName">Paciente:</label>
+                    <input type="text" id="patientName" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="appointmentDateInput">Data:</label>
+                    <input type="date" id="appointmentDateInput" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="appointmentTime">Hora:</label>
+                    <input type="time" id="appointmentTime" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="psychologist">Psicólogo(a):</label>
+                    <select id="psychologist" required>
+                        <option value="">Selecione</option>
+                        <option value="Dra. Ana Silva">Dra. Ana Silva</option>
+                        <option value="Dr. Carlos Mendes">Dr. Carlos Mendes</option>
+                        <option value="Dra. Juliana Costa">Dra. Juliana Costa</option>
+                        <option value="Dr. Roberto Almeida">Dr. Roberto Almeida</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="sessionType">Tipo de Sessão:</label>
+                    <select id="sessionType">
+                        <option value="Consulta Inicial">Consulta Inicial</option>
+                        <option value="Acompanhamento">Acompanhamento</option>
+                        <option value="Terapia Cognitiva">Terapia Cognitiva</option>
+                        <option value="Psicanálise">Psicanálise</option>
+                        <option value="Outro">Outro</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="sessionPrice">Valor da Sessão (R$):</label>
+                    <input type="number" id="sessionPrice" min="0" step="0.01" value="200.00" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="paymentStatus">Status do Pagamento:</label>
+                    <select id="paymentStatus">
+                        <option value="Pendente">Pendente</option>
+                        <option value="Pago">Pago</option>
+                        <option value="Cancelado">Cancelado</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="notes">Observações:</label>
+                    <textarea id="notes" rows="3"></textarea>
+                </div>
+                
+                <button type="button" onclick="saveAppointment()">Salvar</button>
+                <button type="button" onclick="deleteAppointment()" id="deleteBtn" style="background-color: #f44336; display: none;">Excluir</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="messageModal" class="message-modal">
+        <div class="message-modal-content">
+            <h3 id="messageModalTitle"></h3>
+            <p id="messageModalText"></p>
+            <div class="message-modal-buttons">
+                <button class="confirm-btn" id="messageModalConfirmBtn">OK</button>
+                <button class="cancel-btn" id="messageModalCancelBtn" style="display: none;">Cancelar</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Variáveis globais
+        let currentDate = new Date();
+        let appointments = JSON.parse(localStorage.getItem('psychologyAppointments')) || [];
+        
+        // Inicializa o calendário
+        document.addEventListener('DOMContentLoaded', function() {
+            renderCalendar();
+            renderAppointments();
+            updateFinancialSummary();
+
+            // Registra o Service Worker
+            // IMPORTANTE: Service Workers só funcionam em ambientes seguros (HTTPS) ou em localhost.
+            // Se você estiver executando este arquivo diretamente do seu sistema de arquivos (ex: file:///...),
+            // o Service Worker não será registrado e você verá o erro "The URL protocol of the script (':') is not supported.".
+            // Para testar corretamente, use um servidor web local (ex: Live Server no VS Code, http-server) ou hospede a aplicação.
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('service-worker.js')
+                    .then(reg => console.log('Service Worker registrado com sucesso:', reg))
+                    .catch(err => {
+                        console.error('Falha ao registrar o Service Worker:', err);
+                        console.warn('Causa provável: O arquivo HTML não está sendo servido por um servidor web (HTTP/HTTPS).');
+                        console.warn('Para resolver, tente abrir a aplicação via um servidor local (ex: http-server, Live Server no VS Code) ou hospede-a em um ambiente seguro.');
+                    });
+            } else {
+                console.warn('Seu navegador não suporta Service Workers. A funcionalidade offline pode não estar disponível.');
+            }
+        });
+        
+        // Renderiza o calendário para o mês atual
+        function renderCalendar() {
+            const calendarBody = document.getElementById('calendar-body');
+            calendarBody.innerHTML = '';
+            
+            const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+            document.getElementById('currentMonth').textContent = `${monthNames[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
+            
+            const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+            const lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+            
+            let date = 1;
+            let dayOfWeek = firstDay.getDay();
+            
+            // Cria as linhas do calendário
+            for (let i = 0; i < 6; i++) {
+                if (date > lastDay.getDate()) break;
+                
+                const row = document.createElement('tr');
+                
+                // Cria as células para cada dia da semana
+                for (let j = 0; j < 7; j++) {
+                    const cell = document.createElement('td');
+                    
+                    if (i === 0 && j < dayOfWeek) {
+                        // Dias do mês anterior
+                        const prevMonthLastDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 0).getDate();
+                        const prevDate = prevMonthLastDay - (dayOfWeek - j - 1);
+                        
+                        cell.innerHTML = `<div class="day-number">${prevDate}</div>`;
+                        cell.classList.add('other-month');
+                    } else if (date > lastDay.getDate()) {
+                        // Dias do próximo mês
+                        const nextDate = date - lastDay.getDate();
+                        
+                        cell.innerHTML = `<div class="day-number">${nextDate}</div>`;
+                        cell.classList.add('other-month');
+                        date++;
+                    } else {
+                        // Dias do mês atual
+                        cell.innerHTML = `<div class="day-number">${date}</div>`;
+                        
+                        // Verifica se é hoje
+                        const today = new Date();
+                        if (date === today.getDate() && currentDate.getMonth() === today.getMonth() && currentDate.getFullYear() === today.getFullYear()) {
+                            cell.classList.add('today');
+                        }
+                        
+                        // Adiciona evento de clique para agendar
+                        const currentDateStr = formatDate(new Date(currentDate.getFullYear(), currentDate.getMonth(), date));
+                        cell.setAttribute('data-date', currentDateStr);
+                        cell.addEventListener('click', function() {
+                            openAddModal(currentDateStr);
+                        });
+                        
+                        date++;
+                    }
+                    
+                    row.appendChild(cell);
+                }
+                
+                calendarBody.appendChild(row);
+            }
+        }
+        
+        // Renderiza os agendamentos no calendário
+        function renderAppointments() {
+            // Limpa os agendamentos existentes
+            document.querySelectorAll('.appointment').forEach(el => el.remove());
+            
+            // Adiciona os agendamentos
+            appointments.forEach(app => {
+                const dateStr = app.date.split('T')[0];
+                const cell = document.querySelector(`td[data-date="${dateStr}"]`);
+                
+                if (cell) {
+                    const time = app.time.substring(0, 5);
+                    const appointmentEl = document.createElement('div');
+                    appointmentEl.className = 'appointment';
+                    
+                    // Adiciona classe de status de pagamento
+                    if (app.paymentStatus === 'Pago') {
+                        appointmentEl.style.borderLeftColor = '#4CAF50';
+                    } else if (app.paymentStatus === 'Cancelado') {
+                        appointmentEl.style.borderLeftColor = '#f44336';
+                    }
+                    
+                    appointmentEl.innerHTML = `
+                        <div class="appointment-time">${time}</div>
+                        <div>${app.patientName}</div>
+                        <div>${app.psychologist}</div>
+                        ${app.sessionPrice ? `<span class="price-tag">R$ ${formatPrice(app.sessionPrice)}</span>` : ''}
+                    `;
+                    appointmentEl.setAttribute('data-id', app.id);
+                    appointmentEl.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        openEditModal(app.id);
+                    });
+                    
+                    cell.appendChild(appointmentEl);
+                }
+            });
+            
+            // Atualiza o resumo financeiro
+            updateFinancialSummary();
+        }
+        
+        // Atualiza o painel de resumo financeiro
+        function updateFinancialSummary() {
+            const currentMonth = currentDate.getMonth();
+            const currentYear = currentDate.getFullYear();
+            
+            // Filtra os agendamentos do mês atual
+            const monthlyAppointments = appointments.filter(app => {
+                const appDate = new Date(app.date);
+                return appDate.getMonth() === currentMonth && 
+                       appDate.getFullYear() === currentYear &&
+                       app.paymentStatus !== 'Cancelado';
+            });
+            
+            // Calcula totais
+            const totalSessions = monthlyAppointments.length;
+            const totalValue = monthlyAppointments.reduce((sum, app) => sum + parseFloat(app.sessionPrice || 0), 0);
+            const averageValue = totalSessions > 0 ? totalValue / totalSessions : 0;
+            
+            // Atualiza a UI
+            document.getElementById('totalSessions').textContent = totalSessions;
+            document.getElementById('totalValue').textContent = `R$ ${formatPrice(totalValue)}`;
+            document.getElementById('averageValue').textContent = `R$ ${formatPrice(averageValue)}`;
+        }
+        
+        // Formata valor monetário
+        function formatPrice(price) {
+            return parseFloat(price).toFixed(2).replace('.', ',');
+        }
+        
+        // Navega para o mês anterior
+        function previousMonth() {
+            currentDate.setMonth(currentDate.getMonth() - 1);
+            renderCalendar();
+            renderAppointments();
+        }
+        
+        // Navega para o próximo mês
+        function nextMonth() {
+            currentDate.setMonth(currentDate.getMonth() + 1);
+            renderCalendar();
+            renderAppointments();
+        }
+        
+        // Volta para o mês atual
+        function goToToday() {
+            currentDate = new Date();
+            renderCalendar();
+            renderAppointments();
+        }
+        
+        // Abre o modal para adicionar um novo agendamento
+        function openAddModal(date = null) {
+            const modal = document.getElementById('appointmentModal');
+            document.getElementById('modalTitle').textContent = 'Novo Agendamento';
+            document.getElementById('appointmentForm').reset();
+            document.getElementById('deleteBtn').style.display = 'none';
+            document.getElementById('appointmentId').value = '';
+            document.getElementById('sessionPrice').value = '200.00';
+            document.getElementById('paymentStatus').value = 'Pendente';
+            
+            if (date) {
+                document.getElementById('appointmentDateInput').value = date;
+            } else {
+                const today = new Date().toISOString().split('T')[0];
+                document.getElementById('appointmentDateInput').value = today;
+            }
+            
+            modal.style.display = 'block';
+        }
+        
+        // Abre o modal para editar um agendamento existente
+        function openEditModal(id) {
+            const appointment = appointments.find(app => app.id == id);
+            if (!appointment) return;
+            
+            const modal = document.getElementById('appointmentModal');
+            document.getElementById('modalTitle').textContent = 'Editar Agendamento';
+            document.getElementById('appointmentId').value = appointment.id;
+            document.getElementById('patientName').value = appointment.patientName;
+            document.getElementById('appointmentDateInput').value = appointment.date.split('T')[0];
+            document.getElementById('appointmentTime').value = appointment.time;
+            document.getElementById('psychologist').value = appointment.psychologist;
+            document.getElementById('sessionType').value = appointment.sessionType || 'Acompanhamento';
+            document.getElementById('sessionPrice').value = appointment.sessionPrice || '200.00';
+            document.getElementById('paymentStatus').value = appointment.paymentStatus || 'Pendente';
+            document.getElementById('notes').value = appointment.notes || '';
+            
+            document.getElementById('deleteBtn').style.display = 'inline-block';
+            modal.style.display = 'block';
+        }
+        
+        // Fecha o modal
+        function closeModal() {
+            document.getElementById('appointmentModal').style.display = 'none';
+        }
+
+        /**
+         * Exibe um modal de mensagem personalizado (substitui alert/confirm).
+         * @param {string} title - Título do modal.
+         * @param {string} message - Mensagem a ser exibida.
+         * @param {boolean} isConfirm - Se true, exibe botões de "OK" e "Cancelar".
+         * @returns {Promise<boolean>} - Resolve com true se "OK" for clicado, false se "Cancelar".
+         */
+        function showMessageModal(title, message, isConfirm = false) {
+            return new Promise((resolve) => {
+                const modal = document.getElementById('messageModal');
+                const modalTitle = document.getElementById('messageModalTitle');
+                const modalText = document.getElementById('messageModalText');
+                const confirmBtn = document.getElementById('messageModalConfirmBtn');
+                const cancelBtn = document.getElementById('messageModalCancelBtn');
+
+                modalTitle.textContent = title;
+                modalText.textContent = message;
+
+                if (isConfirm) {
+                    cancelBtn.style.display = 'inline-block';
+                    confirmBtn.textContent = 'Sim';
+                } else {
+                    cancelBtn.style.display = 'none';
+                    confirmBtn.textContent = 'OK';
+                }
+
+                modal.style.display = 'flex'; // Usar flex para centralizar
+
+                const handleConfirm = () => {
+                    modal.style.display = 'none';
+                    confirmBtn.removeEventListener('click', handleConfirm);
+                    cancelBtn.removeEventListener('click', handleCancel);
+                    resolve(true);
+                };
+
+                const handleCancel = () => {
+                    modal.style.display = 'none';
+                    confirmBtn.removeEventListener('click', handleConfirm);
+                    cancelBtn.removeEventListener('click', handleCancel);
+                    resolve(false);
+                };
+
+                confirmBtn.addEventListener('click', handleConfirm);
+                cancelBtn.addEventListener('click', handleCancel);
+            });
+        }
+        
+        // Salva o agendamento (novo ou existente)
+        async function saveAppointment() {
+            const id = document.getElementById('appointmentId').value;
+            const patientName = document.getElementById('patientName').value.trim();
+            const date = document.getElementById('appointmentDateInput').value;
+            const time = document.getElementById('appointmentTime').value;
+            const psychologist = document.getElementById('psychologist').value;
+            const sessionType = document.getElementById('sessionType').value;
+            const sessionPrice = document.getElementById('sessionPrice').value;
+            const paymentStatus = document.getElementById('paymentStatus').value;
+            const notes = document.getElementById('notes').value.trim();
+            
+            if (!patientName || !date || !time || !psychologist || !sessionPrice) {
+                await showMessageModal('Campos Obrigatórios', 'Por favor, preencha todos os campos obrigatórios.');
+                return;
+            }
+            
+            const appointmentDate = new Date(`${date}T${time}`);
+            const now = new Date();
+            
+            if (appointmentDate < now) {
+                const proceed = await showMessageModal('Agendamento no Passado', 'Este agendamento está no passado. Deseja continuar?', true);
+                if (!proceed) {
+                    return;
+                }
+            }
+            
+            const appointment = {
+                id: id || Date.now().toString(),
+                patientName,
+                date: `${date}T00:00:00`, // Armazena apenas a data sem hora
+                time,
+                psychologist,
+                sessionType,
+                sessionPrice,
+                paymentStatus,
+                notes,
+                createdAt: id ? undefined : new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+            
+            if (id) {
+                // Atualiza agendamento existente
+                const index = appointments.findIndex(app => app.id === id);
+                if (index !== -1) {
+                    appointments[index] = appointment;
+                }
+            } else {
+                // Adiciona novo agendamento
+                appointments.push(appointment);
+            }
+            
+            // Salva no localStorage
+            localStorage.setItem('psychologyAppointments', JSON.stringify(appointments));
+            
+            // Atualiza a exibição
+            renderAppointments();
+            closeModal();
+        }
+        
+        // Exclui um agendamento
+        async function deleteAppointment() {
+            const id = document.getElementById('appointmentId').value;
+            
+            const confirmDelete = await showMessageModal('Confirmar Exclusão', 'Tem certeza que deseja excluir este agendamento?', true);
+            
+            if (confirmDelete) {
+                appointments = appointments.filter(app => app.id !== id);
+                localStorage.setItem('psychologyAppointments', JSON.stringify(appointments));
+                renderAppointments();
+                closeModal();
+            }
+        }
+        
+        // Busca agendamentos por nome do paciente
+        function searchAppointments() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            
+            if (!searchTerm) {
+                renderAppointments();
+                return;
+            }
+            
+            // Oculta todos os agendamentos
+            document.querySelectorAll('.appointment').forEach(el => el.style.display = 'none');
+            
+            // Mostra apenas os que correspondem à busca
+            appointments.forEach(app => {
+                if (app.patientName.toLowerCase().includes(searchTerm)) {
+                    const appointmentEl = document.querySelector(`.appointment[data-id="${app.id}"]`);
+                    if (appointmentEl) {
+                        appointmentEl.style.display = 'block';
+                    }
+                }
+            });
+        }
+        
+        // Formata a data para YYYY-MM-DD
+        function formatDate(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+        
+        // Fecha o modal se clicar fora dele
+        window.onclick = function(event) {
+            const appointmentModal = document.getElementById('appointmentModal');
+            const messageModal = document.getElementById('messageModal');
+            if (event.target === appointmentModal) {
+                closeModal();
+            }
+            // Não fecha o messageModal ao clicar fora, ele é controlado pelos botões
+        }
+    </script>
+</body>
+</html>
