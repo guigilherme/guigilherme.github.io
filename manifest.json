@@ -2,7 +2,7 @@
   "name": "Agenda de Pacientes Psi",
   "short_name": "Agenda Psi",
   "description": "Aplicação para agendamento e gestão de pacientes de clínica psicológica.",
-  "start_url": "./clínica psi.html",
+  "start_url": "./clinica-psi.html",
   "display": "standalone",
   "background_color": "#f0f4f8",
   "theme_color": "#3b82f6",
