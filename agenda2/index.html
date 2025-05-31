@@ -253,6 +253,27 @@
             background-color: #f44336;
             color: white;
         }
+
+        .repeat-options {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #eee;
+        }
+
+        .repeat-options label {
+            display: inline-block;
+            margin-right: 10px;
+        }
+
+        .repeat-options input[type="checkbox"] {
+            width: auto;
+            margin-right: 5px;
+        }
+
+        .repeat-options input[type="number"] {
+            width: 80px; /* Ajuste a largura conforme necessário */
+            display: inline-block;
+        }
         
         @media (max-width: 768px) {
             .calendar th, .calendar td {
@@ -347,13 +368,7 @@
                 
                 <div class="form-group">
                     <label for="psychologist">Psicólogo(a):</label>
-                    <select id="psychologist" required>
-                        <option value="">Selecione</option>
-                        <option value="Dra. Ana Silva">Dra. Ana Silva</option>
-                        <option value="Dr. Carlos Mendes">Dr. Carlos Mendes</option>
-                        <option value="Dra. Juliana Costa">Dra. Juliana Costa</option>
-                        <option value="Dr. Roberto Almeida">Dr. Roberto Almeida</option>
-                    </select>
+                    <input type="text" id="psychologist" required placeholder="Nome do(a) psicólogo(a)">
                 </div>
                 
                 <div class="form-group">
@@ -361,9 +376,7 @@
                     <select id="sessionType">
                         <option value="Consulta Inicial">Consulta Inicial</option>
                         <option value="Acompanhamento">Acompanhamento</option>
-                        <option value="Terapia Cognitiva">Terapia Cognitiva</option>
-                        <option value="Psicanálise">Psicanálise</option>
-                        <option value="Outro">Outro</option>
+                        <option value="EMDR">EMDR</option>
                     </select>
                 </div>
                 
@@ -385,13 +398,23 @@
                     <label for="notes">Observações:</label>
                     <textarea id="notes" rows="3"></textarea>
                 </div>
+
+                <div class="form-group repeat-options">
+                    <input type="checkbox" id="repeatWeekly">
+                    <label for="repeatWeekly">Repetir semanalmente</label>
+                    <div id="repeatCountContainer" style="display: none;">
+                        <label for="repeatCount"> por </label>
+                        <input type="number" id="repeatCount" min="1" value="4">
+                        <label> semanas</label>
+                    </div>
+                </div>
                 
                 <button type="button" onclick="saveAppointment()">Salvar</button>
                 <button type="button" onclick="deleteAppointment()" id="deleteBtn" style="background-color: #f44336; display: none;">Excluir</button>
             </form>
         </div>
     </div>
-
+    
     <div id="messageModal" class="message-modal">
         <div class="message-modal-content">
             <h3 id="messageModalTitle"></h3>
@@ -430,6 +453,13 @@
             } else {
                 console.warn('Seu navegador não suporta Service Workers. A funcionalidade offline pode não estar disponível.');
             }
+
+            // Adiciona listener para a checkbox de repetição
+            const repeatWeeklyCheckbox = document.getElementById('repeatWeekly');
+            const repeatCountContainer = document.getElementById('repeatCountContainer');
+            repeatWeeklyCheckbox.addEventListener('change', function() {
+                repeatCountContainer.style.display = this.checked ? 'inline-block' : 'none';
+            });
         });
         
         // Renderiza o calendário para o mês atual
@@ -502,8 +532,15 @@
             // Limpa os agendamentos existentes
             document.querySelectorAll('.appointment').forEach(el => el.remove());
             
+            // Ordena os agendamentos por data e hora antes de renderizar
+            const sortedAppointments = [...appointments].sort((a, b) => {
+                const dateA = new Date(`${a.date.split('T')[0]}T${a.time}`);
+                const dateB = new Date(`${b.date.split('T')[0]}T${b.time}`);
+                return dateA - dateB;
+            });
+
             // Adiciona os agendamentos
-            appointments.forEach(app => {
+            sortedAppointments.forEach(app => {
                 const dateStr = app.date.split('T')[0];
                 const cell = document.querySelector(`td[data-date="${dateStr}"]`);
                 
@@ -599,6 +636,10 @@
             document.getElementById('sessionPrice').value = '200.00';
             document.getElementById('paymentStatus').value = 'Pendente';
             
+            // Esconde opções de repetição ao abrir para adicionar
+            document.getElementById('repeatWeekly').checked = false;
+            document.getElementById('repeatCountContainer').style.display = 'none';
+
             if (date) {
                 document.getElementById('appointmentDateInput').value = date;
             } else {
@@ -620,13 +661,18 @@
             document.getElementById('patientName').value = appointment.patientName;
             document.getElementById('appointmentDateInput').value = appointment.date.split('T')[0];
             document.getElementById('appointmentTime').value = appointment.time;
-            document.getElementById('psychologist').value = appointment.psychologist;
+            document.getElementById('psychologist').value = appointment.psychologist; // Agora é um input text
             document.getElementById('sessionType').value = appointment.sessionType || 'Acompanhamento';
             document.getElementById('sessionPrice').value = appointment.sessionPrice || '200.00';
             document.getElementById('paymentStatus').value = appointment.paymentStatus || 'Pendente';
             document.getElementById('notes').value = appointment.notes || '';
             
             document.getElementById('deleteBtn').style.display = 'inline-block';
+            
+            // Esconde opções de repetição ao abrir para editar
+            document.getElementById('repeatWeekly').checked = false;
+            document.getElementById('repeatCountContainer').style.display = 'none';
+
             modal.style.display = 'block';
         }
         
@@ -640,7 +686,7 @@
          * @param {string} title - Título do modal.
          * @param {string} message - Mensagem a ser exibida.
          * @param {boolean} isConfirm - Se true, exibe botões de "OK" e "Cancelar".
-         * @returns {Promise<boolean>} - Resolve com true se "OK" for clicado, false se "Cancelar".
+         * @returns {Promise<boolean>} - Resolve com true se "OK" for clicado, false se "Cancelar.
          */
         function showMessageModal(title, message, isConfirm = false) {
             return new Promise((resolve) => {
@@ -688,14 +734,21 @@
             const patientName = document.getElementById('patientName').value.trim();
             const date = document.getElementById('appointmentDateInput').value;
             const time = document.getElementById('appointmentTime').value;
-            const psychologist = document.getElementById('psychologist').value;
+            const psychologist = document.getElementById('psychologist').value.trim(); // Obter valor do input text
             const sessionType = document.getElementById('sessionType').value;
             const sessionPrice = document.getElementById('sessionPrice').value;
             const paymentStatus = document.getElementById('paymentStatus').value;
             const notes = document.getElementById('notes').value.trim();
+            const repeatWeekly = document.getElementById('repeatWeekly').checked;
+            const repeatCount = parseInt(document.getElementById('repeatCount').value);
             
             if (!patientName || !date || !time || !psychologist || !sessionPrice) {
                 await showMessageModal('Campos Obrigatórios', 'Por favor, preencha todos os campos obrigatórios.');
+                return;
+            }
+
+            if (repeatWeekly && (isNaN(repeatCount) || repeatCount < 1)) {
+                await showMessageModal('Repetição Inválida', 'Por favor, insira um número válido de semanas para repetição (mínimo 1).');
                 return;
             }
             
@@ -709,7 +762,7 @@
                 }
             }
             
-            const appointment = {
+            const newAppointment = {
                 id: id || Date.now().toString(),
                 patientName,
                 date: `${date}T00:00:00`, // Armazena apenas a data sem hora
@@ -727,11 +780,28 @@
                 // Atualiza agendamento existente
                 const index = appointments.findIndex(app => app.id === id);
                 if (index !== -1) {
-                    appointments[index] = appointment;
+                    appointments[index] = newAppointment;
                 }
             } else {
                 // Adiciona novo agendamento
-                appointments.push(appointment);
+                appointments.push(newAppointment);
+
+                // Lógica de repetição
+                if (repeatWeekly && repeatCount > 0) {
+                    for (let i = 1; i <= repeatCount; i++) {
+                        const nextDate = new Date(appointmentDate);
+                        nextDate.setDate(appointmentDate.getDate() + (i * 7)); // Adiciona 7 dias para cada semana
+                        
+                        const repeatedAppointment = {
+                            ...newAppointment,
+                            id: Date.now().toString() + '-' + i, // ID único para repetições
+                            date: `${formatDate(nextDate)}T00:00:00`,
+                            createdAt: new Date().toISOString(),
+                            updatedAt: new Date().toISOString()
+                        };
+                        appointments.push(repeatedAppointment);
+                    }
+                }
             }
             
             // Salva no localStorage
