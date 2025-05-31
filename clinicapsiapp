@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agendamento de Pacientes</title>
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#3b82f6">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for better readability and aesthetics */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8; /* Light blue-gray background */
+            color: #334155; /* Darker text color */
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Align to top */
+            min-height: 100vh; /* Ensure body takes full viewport height */
+            padding: 1rem; /* Overall padding */
+        }
+        .container {
+            width: 100%;
+            max-width: 500px; /* Max width closer to mobile screenshot */
+            margin: 0 auto; /* Center the container */
+            padding: 0; /* Remove container padding as sections will have it */
+            background-color: transparent; /* No background for container itself */
+            box-shadow: none; /* No shadow for container */
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem; /* Space between main sections */
+        }
+        .section-card {
+            background-color: #ffffff;
+            border-radius: 1rem; /* More rounded corners */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* Soft shadow */
+            padding: 1.5rem; /* Padding inside each card section */
+        }
+        .form-group label {
+            font-weight: 600; /* Semi-bold labels */
+            margin-bottom: 0.5rem;
+            display: block;
+            color: #475569; /* Slightly darker label text */
+        }
+        .form-group input[type="text"],
+        .form-group input[type="number"],
+        .form-group input[type="time"],
+        .form-group select {
+            padding: 0.75rem 1rem;
+            border: 1px solid #cbd5e1; /* Light gray border */
+            border-radius: 0.5rem; /* Rounded input fields */
+            width: 100%;
+            box-sizing: border-box;
+            background-color: #ffffff; /* White background for inputs */
+            color: #475569;
+        }
+        .form-group.checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 1rem; /* Space above checkbox */
+        }
+        .form-group.checkbox-group input[type="checkbox"] {
+            width: auto; /* Allow checkbox to be its natural size */
+            margin-right: 0.5rem;
+        }
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+            width: 100%; /* Full width button */
+        }
+        .btn-primary {
+            background-color: #3b82f6; /* Blue */
+            color: #ffffff;
+            border: none;
+        }
+        .btn-primary:hover {
+            background-color: #2563eb; /* Darker blue on hover */
+            transform: translateY(-1px); /* Slight lift effect */
+        }
+        .appointment-card {
+            background-color: #e0f2fe; /* Lighter blue for cards */
+            padding: 1rem 1.5rem;
+            border-radius: 0.75rem;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        }
+        .appointment-card:last-child {
+            margin-bottom: 0;
+        }
+        .appointment-card .info {
+            flex-grow: 1; /* Allow info section to take available space */
+        }
+        .appointment-card .name {
+            font-weight: 700; /* Bold name */
+            color: #1e3a8a; /* Dark blue */
+        }
+        .appointment-card .details {
+            color: #334155;
+            font-size: 0.9rem; /* Slightly smaller text for details */
+        }
+        .appointment-card .payment-status-container {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 0.25rem;
+        }
+        .appointment-card .payment-status-container input[type="checkbox"] {
+            width: auto;
+            height: auto;
+            margin: 0; /* Remove default margin */
+        }
+        .appointment-card .status-text {
+            font-weight: bold; /* Make status text bold */
+            font-size: 1rem; /* Ensure clear size */
+        }
+        .status-text.paid {
+            color: #10b981; /* Green for paid */
+        }
+        .status-text.unpaid {
+            color: #ef4444; /* Red for unpaid */
+        }
+        .message-box {
+            background-color: #d1fae5; /* Green for success */
+            color: #065f46;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-top: 1rem;
+            text-align: center;
+            display: none; /* Hidden by default */
+        }
+        /* Adjustments for smaller screens */
+        @media (max-width: 640px) {
+            .container {
+                padding: 0.5rem;
+            }
+            .section-card {
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body class="p-4">
+    <div class="container">
+        <h1 class="text-2xl font-extrabold text-center mb-4 text-gray-800 flex items-center justify-center gap-2">
+            🧠 Agenda de Pacientes 🧠
+        </h1>
+
+        <div class="section-card">
+            <h2 class="text-xl font-bold mb-5 text-gray-700">Novo Agendamento</h2>
+            <form id="appointmentForm" class="grid grid-cols-1 gap-4">
+                <div class="form-group">
+                    <label for="patientName">Nome do Paciente</label>
+                    <input type="text" id="patientName" placeholder="" required class="focus:ring-2 focus:ring-blue-300 focus:border-transparent">
+                </div>
+                <div class="form-group">
+                    <label for="appointmentDay">Dia da Semana</label>
+                    <select id="appointmentDay" required class="focus:ring-2 focus:ring-blue-300 focus:border-transparent">
+                        <option value="">Selecione o Dia</option>
+                        <option value="Domingo">Domingo</option>
+                        <option value="Segunda-feira">Segunda-feira</option>
+                        <option value="Terça-feira">Terça-feira</option>
+                        <option value="Quarta-feira">Quarta-feira</option>
+                        <option value="Quinta-feira">Quinta-feira</option>
+                        <option value="Sexta-feira">Sexta-feira</option>
+                        <option value="Sábado">Sábado</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="appointmentTime">Horário</label>
+                    <input type="time" id="appointmentTime" required class="focus:ring-2 focus:ring-blue-300 focus:border-transparent">
+                </div>
+                <div class="form-group">
+                    <label for="sessionValue">Valor da Sessão (R$)</label>
+                    <input type="number" id="sessionValue" placeholder="Ex: 150.00" step="0.01" min="0" class="focus:ring-2 focus:ring-blue-300 focus:border-transparent">
+                </div>
+                <div class="flex justify-center mt-2">
+                    <button type="submit" class="btn btn-primary">Inicializando...</button>
+                </div>
+            </form>
+            <div id="messageBox" class="message-box"></div>
+        </div>
+
+        <div class="section-card">
+            <h2 class="text-xl font-bold mb-5 text-gray-700">Pacientes Agendados</h2>
+            <div id="appointmentList" class="space-y-4">
+                <p class="text-center text-gray-500" id="noAppointmentsMessage">Inicializando aplicativo...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Array to store appointment data
+        let appointments = [];
+
+        // DOM Elements
+        const appointmentForm = document.getElementById('appointmentForm');
+        const patientNameInput = document.getElementById('patientName');
+        const appointmentDaySelect = document.getElementById('appointmentDay');
+        const appointmentTimeInput = document.getElementById('appointmentTime');
+        const sessionValueInput = document.getElementById('sessionValue');
+        const appointmentListDiv = document.getElementById('appointmentList');
+        const messageBox = document.getElementById('messageBox');
+        const noAppointmentsMessage = document.getElementById('noAppointmentsMessage');
+        const submitButton = appointmentForm.querySelector('button[type="submit"]');
+
+        // Helper function to show a message
+        function showMessage(message, type = 'success') {
+            messageBox.textContent = message;
+            messageBox.className = `message-box ${type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'} block`;
+            setTimeout(() => {
+                messageBox.style.display = 'none';
+            }, 3000); // Hide after 3 seconds
+        }
+
+        // Function to render appointments to the DOM
+        function renderAppointments() {
+            appointmentListDiv.innerHTML = ''; // Clear existing list
+
+            if (appointments.length === 0) {
+                noAppointmentsMessage.style.display = 'block';
+                return;
+            } else {
+                noAppointmentsMessage.style.display = 'none';
+            }
+
+            // Define the order of days for sorting
+            const dayOrder = {
+                "Domingo": 0,
+                "Segunda-feira": 1,
+                "Terça-feira": 2,
+                "Quarta-feira": 3,
+                "Quinta-feira": 4,
+                "Sexta-feira": 5,
+                "Sábado": 6
+            };
+
+            // Sort appointments by day first, then by time
+            const sortedAppointments = [...appointments].sort((a, b) => {
+                const dayA = dayOrder[a.day];
+                const dayB = dayOrder[b.day];
+
+                if (dayA !== dayB) {
+                    return dayA - dayB;
+                }
+
+                // If days are the same, sort by time
+                return a.time.localeCompare(b.time);
+            });
+
+
+            sortedAppointments.forEach((appointment, index) => {
+                const card = document.createElement('div');
+                card.className = 'appointment-card';
+                card.innerHTML = `
+                    <div class="info">
+                        <p class="name">${appointment.name}</p>
+                        <p class="details">${appointment.day} às ${appointment.time}</p>
+                        <p class="details">Valor: R$ ${parseFloat(appointment.sessionValue || 0).toFixed(2).replace('.', ',')}</p>
+                        <div class="payment-status-container">
+                            <input type="checkbox" id="isPaid-${appointment.id}" data-id="${appointment.id}" ${appointment.isPaid ? 'checked' : ''} class="focus:ring-2 focus:ring-blue-300">
+                            <label for="isPaid-${appointment.id}" class="status-text ${appointment.isPaid ? 'paid' : 'unpaid'}">
+                                ${appointment.isPaid ? 'Pago' : 'Não Pago'}
+                            </label>
+                        </div>
+                    </div>
+                    <button data-id="${appointment.id}" class="text-red-500 hover:text-red-700 font-bold text-lg">
+                        &times; </button>
+                `;
+                appointmentListDiv.appendChild(card);
+            });
+
+            // Add event listeners for delete buttons and new checkboxes
+            appointmentListDiv.querySelectorAll('button').forEach(button => {
+                button.addEventListener('click', (event) => {
+                    const idToDelete = event.target.dataset.id;
+                    const originalIndex = appointments.findIndex(app => app.id === idToDelete);
+
+                    if (originalIndex > -1) {
+                        appointments.splice(originalIndex, 1);
+                        showMessage('Agendamento removido com sucesso!', 'success');
+                        renderAppointments(); // Re-render the list
+                    }
+                });
+            });
+
+            appointmentListDiv.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                checkbox.addEventListener('change', (event) => {
+                    const idToUpdate = event.target.dataset.id;
+                    const isChecked = event.target.checked;
+
+                    const appointmentIndex = appointments.findIndex(app => app.id === idToUpdate);
+                    if (appointmentIndex > -1) {
+                        appointments[appointmentIndex].isPaid = isChecked;
+                        showMessage('Status de pagamento atualizado!', 'success');
+                        renderAppointments(); // Re-render to update status text/color
+                    }
+                });
+            });
+        }
+
+        // Generate a unique ID for each appointment
+        function generateUniqueId() {
+            return Date.now().toString(36) + Math.random().toString(36).substr(2);
+        }
+
+        // Event listener for form submission
+        appointmentForm.addEventListener('submit', (event) => {
+            event.preventDefault(); // Prevent default form submission
+
+            const patientName = patientNameInput.value.trim();
+            const appointmentDay = appointmentDaySelect.value;
+            const appointmentTime = appointmentTimeInput.value;
+            const sessionValue = sessionValueInput.value;
+
+            if (!patientName || !appointmentDay || !appointmentTime) {
+                showMessage('Por favor, preencha os campos obrigatórios (Nome, Dia, Horário).', 'error');
+                return;
+            }
+
+            const newAppointment = {
+                id: generateUniqueId(), // Assign a unique ID
+                name: patientName,
+                day: appointmentDay,
+                time: appointmentTime,
+                sessionValue: sessionValue,
+                isPaid: false // Default to not paid on creation
+            };
+
+            appointments.push(newAppointment);
+            showMessage('Agendamento adicionado com sucesso!');
+
+            // Clear form fields
+            patientNameInput.value = '';
+            appointmentDaySelect.value = '';
+            appointmentTimeInput.value = '';
+            sessionValueInput.value = '';
+            submitButton.textContent = 'Adicionar Agendamento'; // Reset button text
+
+            renderAppointments(); // Update the displayed list
+        });
+
+        // Initial button text change on load
+        document.addEventListener('DOMContentLoaded', () => {
+            submitButton.textContent = 'Adicionar Agendamento'; // Set initial button text
+            renderAppointments(); // Initial render
+        });
+
+        // Although sorting buttons are removed from UI, keeping the logic here
+        // in case they are re-added or for internal use.
+        function sortByDay() {
+            const dayOrder = {
+                "Domingo": 0,
+                "Segunda-feira": 1,
+                "Terça-feira": 2,
+                "Quarta-feira": 3,
+                "Quinta-feira": 4,
+                "Sexta-feira": 5,
+                "Sábado": 6
+            };
+            appointments.sort((a, b) => {
+                return dayOrder[a.day] - dayOrder[b.day];
+            });
+            showMessage('Lista organizada por dia da semana.');
+            renderAppointments();
+        }
+
+        function sortByTime() {
+            appointments.sort((a, b) => {
+                return a.time.localeCompare(b.time);
+            });
+            showMessage('Lista organizada por horário.');
+            renderAppointments();
+        }
+
+        // Registra o Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./service-worker.js')
+                    .then(registration => {
+                        console.log('Service Worker registrado com sucesso:', registration);
+                    })
+                    .catch(error => {
+                        console.log('Falha no registro do Service Worker:', error);
+                    });
+            });
+        }
+    </script>
+</body>
+</html>
