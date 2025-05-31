@@ -1,6 +1,6 @@
 const CACHE_NAME = 'agenda-psi-cache-v2'; // Alterado para uma nova versão de cache
 const urlsToCache = [
-  './clinica-psi.html', // Caminho atualizado
+  './index.html', // Caminho atualizado
   './manifest.json',
   './service-worker.js',
   'https://cdn.tailwindcss.com',
