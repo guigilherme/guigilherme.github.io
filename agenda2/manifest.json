@@ -2,7 +2,7 @@
   "name": "Agenda Clínica Psicológica",
   "short_name": "Agenda Psico",
   "description": "Gerenciador de agendamentos para clínica psicológica com suporte offline.",
-  "start_url": "/index.html",
+  "start_url": "/agenda2/index.html",
   "display": "standalone",
   "background_color": "#f5f5f5",
   "theme_color": "#4a6fa5",
