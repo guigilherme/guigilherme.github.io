@@ -1,79 +1,104 @@
-// Nome do cache para a versão atual do service worker
-const CACHE_NAME = 'agenda-psico-v1';
-
-// Lista de arquivos para cachear durante a instalação
-const urlsToCache = [
-  '/index.html',
-  '/manifest.json',
-  // Você pode adicionar outros arquivos CSS, JS ou imagens aqui se eles estiverem em pastas separadas
-  // Exemplo: '/css/style.css', '/js/app.js', '/images/icon.png'
+// service-worker.js
+const CACHE_NAME = 'agenda-psico-v2';
+const OFFLINE_PAGE = '/agenda2/index.html';
+const FILES_TO_CACHE = [
+  OFFLINE_PAGE,
+  '/agenda2/manifest.json',
+  '/agenda2/service-worker.js',
+  // Adicione outros assets se necessário (imagens, CSS, JS separados)
 ];
 
-// Evento de instalação do Service Worker
+// Instalação - Cache dos arquivos essenciais
 self.addEventListener('install', (event) => {
-  // Espera até que o cache seja aberto e todos os arquivos essenciais sejam adicionados
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then((cache) => {
-        console.log('Cache aberto');
-        return cache.addAll(urlsToCache);
+      .then(cache => {
+        console.log('Cache aberto e arquivos essenciais armazenados');
+        return cache.addAll(FILES_TO_CACHE);
       })
+      .then(() => self.skipWaiting()) // Ativa imediatamente
   );
 });
 
-// Evento de ativação do Service Worker
+// Ativação - Limpeza de caches antigos
 self.addEventListener('activate', (event) => {
-  // Remove caches antigos
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
+    caches.keys().then(cacheNames => {
       return Promise.all(
-        cacheNames.map((cacheName) => {
-          if (cacheName !== CACHE_NAME) {
-            console.log('Removendo cache antigo:', cacheName);
-            return caches.delete(cacheName);
-          }
-        })
+        cacheNames
+          .filter(name => name !== CACHE_NAME)
+          .map(name => {
+            console.log('Removendo cache antigo:', name);
+            return caches.delete(name);
+          })
       );
+    })
+    .then(() => {
+      console.log('Service Worker ativado e controlando clientes');
+      return clients.claim();
     })
   );
 });
 
-// Evento de fetch (intercepta requisições de rede)
+// Estratégia de Fetch: Cache-first com fallback para rede
 self.addEventListener('fetch', (event) => {
+  // Ignora requisições não-GET e requisições externas (opcional)
+  if (event.request.method !== 'GET' || !event.request.url.startsWith(self.location.origin)) {
+    return;
+  }
+
+  // Tratamento especial para navegação (HTML)
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request)
+        .catch(() => caches.match(OFFLINE_PAGE))
+    );
+    return;
+  }
+
+  // Para outros recursos (JS, CSS, manifest, etc)
   event.respondWith(
     caches.match(event.request)
-      .then((response) => {
-        // Se o recurso estiver no cache, retorna-o
-        if (response) {
-          return response;
-        }
-        // Se não estiver no cache, tenta buscar na rede
-        return fetch(event.request)
-          .then((networkResponse) => {
-            // Verifica se a resposta da rede é válida antes de cachear
-            if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
-              return networkResponse;
+      .then(cached => {
+        // Retorna do cache se existir, senão busca na rede
+        return cached || fetch(event.request)
+          .then(response => {
+            // Se for um asset estático, adiciona ao cache para uso offline
+            if (isCacheable(event.request)) {
+              const responseToCache = response.clone();
+              caches.open(CACHE_NAME)
+                .then(cache => cache.put(event.request, responseToCache));
             }
-
-            // Clona a resposta para que ela possa ser usada tanto pelo navegador quanto pelo cache
-            const responseToCache = networkResponse.clone();
-
-            caches.open(CACHE_NAME)
-              .then((cache) => {
-                cache.put(event.request, responseToCache);
-              });
-
-            return networkResponse;
+            return response;
           })
-          .catch(() => {
-            // Fallback para quando a rede e o cache falham (ex: página offline personalizada)
-            // Você pode retornar uma página offline aqui se desejar
-            // return caches.match('/offline.html');
-            console.log('Falha na requisição e não encontrado no cache:', event.request.url);
-            return new Response('<h1>Você está offline e esta página não está em cache.</h1>', {
-              headers: { 'Content-Type': 'text/html' }
-            });
+          .catch(error => {
+            console.log('Falha na requisição:', error);
+            // Fallback genérico para outros recursos
+            if (event.request.headers.get('accept').includes('text/html')) {
+              return caches.match(OFFLINE_PAGE);
+            }
           });
       })
   );
+});
+
+// Verifica se a requisição deve ser cacheada
+function isCacheable(request) {
+  return (
+    request.url.startsWith(self.location.origin) &&
+    !request.url.includes('/api/') && // Exclui endpoints de API
+    (request.url.endsWith('.js') || 
+     request.url.endsWith('.css') || 
+     request.url.endsWith('.json') ||
+     request.url.endsWith('.png') ||
+     request.url.endsWith('.jpg') ||
+     request.url.endsWith('.ico'))
+  );
+}
+
+// Mensagem para atualização em segundo plano
+self.addEventListener('message', (event) => {
+  if (event.data.action === 'skipWaiting') {
+    self.skipWaiting();
+  }
 });
