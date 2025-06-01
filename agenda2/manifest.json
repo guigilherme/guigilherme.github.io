@@ -456,6 +456,6 @@
       "sizes": "1024x1024"
     }
   ],
-  "id": "/agenda2/", // CORRIGIDO para caminho absoluto
-  "scope": "/agenda2/" // CORRIGIDO para caminho absoluto
+  "id": "agenda2",
+  "scope": "agenda2"
 }
