@@ -443,7 +443,7 @@
             // o Service Worker não será registrado e você verá o erro "The URL protocol of the script (':') is not supported.".
             // Para testar corretamente, use um servidor web local (ex: Live Server no VS Code, http-server) ou hospede a aplicação.
             if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register(/agenda2/service-worker.js')
+                navigator.serviceWorker.register('/agenda2/service-worker.js')
                     .then(reg => console.log('Service Worker registrado com sucesso:', reg))
                     .catch(err => {
                         console.error('Falha ao registrar o Service Worker:', err);
